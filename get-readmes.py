@@ -1,35 +1,60 @@
 from json import loads as json_load
 from operator import add as concat
+from datetime import datetime
 from urlparse import urljoin
 from urllib import urlopen
 from pprint import pprint
+from time import sleep
 from math import ceil
 
 import logging
 
-per_page = 100
+from dateutil.parser import parse as dateutil_parse
+from dateutil.tz import tzutc
+
+per_page = 25
 
 def url(path):
     return urljoin('https://api.github.com', path)
 
+def get_data(url):
+    return json_load(urlopen(url).read())
+
 def pages(repo_count):
     return range(1, 1 + int(ceil(repo_count / float(per_page))))
 
-if __name__ == '__main__':
-
+def repos():
+    '''
+    '''
     #
     # http://developer.github.com/v3/users/#get-a-single-user
     #
-    user_info = json_load(urlopen(url('/users/codeforamerica')).read())
-    
-    repos = []
-    
+    user_info = get_data(url('/users/codeforamerica'))
+
     for page in pages(user_info['public_repos']):
         #
         # http://developer.github.com/v3/repos/#list-user-repositories
         #
         page_url = url('/users/codeforamerica/repos?per_page=%d&page=%d' % (per_page, page))
         logging.debug('Loading %s' % page_url)
-        repos += json_load(urlopen(page_url).read())
+        
+        for repo in get_data(page_url):
+            yield repo
+
+if __name__ == '__main__':
+
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
+
+    right_now = datetime.now(tzutc())
     
-    print 'Found', len(repos), 'repos.'
+    for repo in repos():
+        created_at = dateutil_parse(repo['created_at'])
+        pushed_at = dateutil_parse(repo['pushed_at'])
+        
+        print url('/repos/codeforamerica/%(name)s/readme' % repo)
+    
+        print 'full_name:', repo['full_name']
+        print 'created_at:', repo['created_at'], (right_now - created_at)
+        print 'pushed_at:', repo['pushed_at'], (right_now - pushed_at)
+    
+        sleep(1)
