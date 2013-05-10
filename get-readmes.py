@@ -98,19 +98,22 @@ Username and password will be found in environment variables
 GITHUB_USERNAME and GITHUB_PASSWORD if not provided in options.''')
 
 defaults = dict(username=environ.get('GITHUB_USERNAME', None),
-                password=environ.get('GITHUB_PASSWORD', None))
+                password=environ.get('GITHUB_PASSWORD', None),
+                loglevel=logging.INFO)
 
 parser.set_defaults(**defaults)
 
 parser.add_option('-u', '--username', dest='username', help='Github username, default %(username)s.' % defaults)
 parser.add_option('-p', '--password', dest='password', help='Github password, default %(password)s.' % defaults)
 
+parser.add_option('-v', '--verbose', dest='loglevel', action='store_const', const=logging.DEBUG)
+parser.add_option('-q', '--quiet', dest='loglevel', action='store_const', const=logging.WARNING)
+
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
-    
     opts, args = parser.parse_args()
     
+    logging.basicConfig(level=opts.loglevel, format='%(levelname)s - %(message)s')
     http_headers['Authorization'] = 'Basic ' + b64encode('%s:%s' % (opts.username, opts.password))
 
     right_now = datetime.now(tzutc())
@@ -122,9 +125,9 @@ if __name__ == '__main__':
     
         readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
         
-        print 'full_name:', repo['full_name']
+        logging.info('full_name: %s' % repo['full_name'])
         
-        readme = get_data(readme_url)
-        
-        if readme is not None:
-            print b64decode(readme['content'])
+        #readme = get_data(readme_url)
+        #
+        #if readme is not None:
+        #    print b64decode(readme['content'])
