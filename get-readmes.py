@@ -14,6 +14,7 @@ from dateutil.tz import tzutc
 per_page = 25
 http_headers = {'User-Agent': 'Python'}
 http_auth = None
+org_name = None
 
 def url(path):
     ''' Join an absolute path to the Github API base.
@@ -36,9 +37,9 @@ def generate_repos():
     ''' Generate list of repo dictionaries.
     '''
     #
-    # http://developer.github.com/v3/users/#get-a-single-user
+    # http://developer.github.com/v3/orgs/#get-an-organization
     #
-    user_info = get_data(url('/users/codeforamerica'))
+    user_info = get_data(url('/orgs/%s' % org_name))
     
     #
     # 1, 2, 3, etc. for each page of listed repos.
@@ -48,9 +49,9 @@ def generate_repos():
 
     for page in page_nums:
         #
-        # http://developer.github.com/v3/repos/#list-user-repositories
+        # http://developer.github.com/v3/repos/#list-organization-repositories
         #
-        page_url = url('/users/codeforamerica/repos?per_page=%d&page=%d' % (per_page, page))
+        page_url = url('/orgs/%s/repos?per_page=%d&page=%d' % (org_name, per_page, page))
 
         for repo in get_data(page_url):
             yield repo
@@ -91,7 +92,7 @@ def is_current_repo(repo):
 def is_compliant_repo(repo):
     ''' Return True for a compliant repo, False otherwise.
     '''
-    readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
+    readme_url = url('/repos/%(full_name)s/readme' % repo)
     readme = get_data(readme_url)
     
     #
@@ -109,12 +110,14 @@ GITHUB_USERNAME and GITHUB_PASSWORD if not provided in options.''')
 
 defaults = dict(username=environ.get('GITHUB_USERNAME', None),
                 password=environ.get('GITHUB_PASSWORD', None),
+                organization='codeforamerica',
                 loglevel=logging.INFO)
 
 parser.set_defaults(**defaults)
 
-parser.add_option('-u', '--username', dest='username', help='Github username, default %(username)s.' % defaults)
-parser.add_option('-p', '--password', dest='password', help='Github password, default %(password)s.' % defaults)
+parser.add_option('-u', '--username', dest='username', help='Github username, default %s.' % repr(defaults['username']))
+parser.add_option('-p', '--password', dest='password', help='Github password, default %s.' % repr(defaults['password']))
+parser.add_option('-o', '--organization', dest='organization', help='Github organization, default %s.' % repr(defaults['organization']))
 
 parser.add_option('-v', '--verbose', dest='loglevel', action='store_const', const=logging.DEBUG)
 parser.add_option('-q', '--quiet', dest='loglevel', action='store_const', const=logging.WARNING)
@@ -125,6 +128,7 @@ if __name__ == '__main__':
     
     logging.basicConfig(level=opts.loglevel, format='%(levelname)s - %(message)s')
     http_auth = (opts.username, opts.password)
+    org_name = opts.organization
 
     for repo in generate_repos():
         if not is_current_repo(repo):
