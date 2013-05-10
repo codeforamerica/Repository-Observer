@@ -1,22 +1,19 @@
 from os import environ
 from optparse import OptionParser
-from json import loads as json_load
-from operator import add as concat
-from httplib import HTTPConnection, HTTPSConnection
 from datetime import datetime, timedelta
-from urlparse import urljoin, urlparse
-from base64 import b64decode, b64encode
-from pprint import pprint
-from time import sleep
+from urlparse import urljoin
+from base64 import b64decode
 from math import ceil
 
 import logging
 
+from requests import get as http_get
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzutc
 
 per_page = 25
 http_headers = {'User-Agent': 'Python'}
+http_auth = None
 
 def url(path):
     ''' Join an absolute path to the Github API base.
@@ -28,18 +25,12 @@ def get_data(url):
     '''
     logging.debug('Loading %s' % url)
     
-    scheme, host, path, p, query, f = urlparse(url)
-    connector = HTTPSConnection if scheme == 'https' else HTTPConnection
-
-    conn = connector(host)
-    conn.request('GET', path + '?' + query, headers=http_headers)
-
-    resp = conn.getresponse()
+    resp = http_get(url, headers=http_headers, auth=http_auth)
     
-    if resp.status not in range(200, 299):
+    if resp.status_code not in range(200, 299):
         return None
     
-    return json_load(resp.read())
+    return resp.json()
 
 def generate_repos():
     ''' Generate list of repo dictionaries.
@@ -133,14 +124,14 @@ if __name__ == '__main__':
     opts, args = parser.parse_args()
     
     logging.basicConfig(level=opts.loglevel, format='%(levelname)s - %(message)s')
-    http_headers['Authorization'] = 'Basic ' + b64encode('%s:%s' % (opts.username, opts.password))
+    http_auth = (opts.username, opts.password)
 
     for repo in generate_repos():
         if not is_current_repo(repo):
             continue
     
         elif is_compliant_repo(repo):
-            logging.info(repo['full_name'])
+            print 'pass', repo['full_name']
 
         else:
-            logging.warning(repo['full_name'])
+            print 'fail', repo['full_name']
