@@ -19,6 +19,8 @@ per_page = 25
 http_headers = {'User-Agent': 'Python'}
 
 def url(path):
+    ''' Join an absolute path to the Github API base.
+    '''
     return urljoin('https://api.github.com', path)
 
 def get_data(url):
@@ -39,18 +41,21 @@ def get_data(url):
     
     return json_load(resp.read())
 
-def pages(repo_count):
-    return range(1, 1 + int(ceil(repo_count / float(per_page))))
-
-def repos():
+def generate_repos():
     ''' Generate list of repo dictionaries.
     '''
     #
     # http://developer.github.com/v3/users/#get-a-single-user
     #
     user_info = get_data(url('/users/codeforamerica'))
+    
+    #
+    # 1, 2, 3, etc. for each page of listed repos.
+    #
+    repo_count = user_info['public_repos']
+    page_nums = range(1, 1 + int(ceil(repo_count / float(per_page))))
 
-    for page in pages(user_info['public_repos']):
+    for page in page_nums:
         #
         # http://developer.github.com/v3/repos/#list-user-repositories
         #
@@ -130,13 +135,12 @@ if __name__ == '__main__':
     logging.basicConfig(level=opts.loglevel, format='%(levelname)s - %(message)s')
     http_headers['Authorization'] = 'Basic ' + b64encode('%s:%s' % (opts.username, opts.password))
 
-    right_now = datetime.now(tzutc())
-    cutoff_dt = right_now - timedelta(days=90)
-    
-    for repo in repos():
+    for repo in generate_repos():
         if not is_current_repo(repo):
             continue
     
-        log_func = logging.info if is_compliant_repo(repo) else logging.warning
+        elif is_compliant_repo(repo):
+            logging.info(repo['full_name'])
 
-        log_func(repo['full_name'])
+        else:
+            logging.warning(repo['full_name'])
