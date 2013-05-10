@@ -1,6 +1,7 @@
 from json import loads as json_load
 from operator import add as concat
-from datetime import datetime
+from datetime import datetime, timedelta
+from base64 import b64decode
 from urlparse import urljoin
 from urllib import urlopen
 from pprint import pprint
@@ -46,12 +47,17 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
 
     right_now = datetime.now(tzutc())
+    cutoff_dt = right_now - timedelta(days=90)
     
     for repo in repos():
+        readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
         created_at = dateutil_parse(repo['created_at'])
         pushed_at = dateutil_parse(repo['pushed_at'])
         
-        print url('/repos/codeforamerica/%(name)s/readme' % repo)
+        if pushed_at < cutoff_dt:
+            continue
+        
+        print readme_url
     
         print 'full_name:', repo['full_name']
         print 'created_at:', repo['created_at'], (right_now - created_at)
