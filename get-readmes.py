@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+''' Checks all repositories from a Github organization for compliant READMEs.
+
+Username and password will be found in environment variables
+GITHUB_USERNAME and GITHUB_PASSWORD if not provided in options.
+'''
 from os import environ
 from optparse import OptionParser
 from datetime import datetime, timedelta
@@ -11,8 +17,10 @@ from requests import get as http_get
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzutc
 
+#
+# Global configuration parameters, some overriden by command-line opts below.
+#
 per_page = 25
-http_headers = {'User-Agent': 'Python'}
 http_auth = None
 org_name = None
 
@@ -26,7 +34,7 @@ def get_data(url):
     '''
     logging.debug('Loading %s' % url)
     
-    resp = http_get(url, headers=http_headers, auth=http_auth)
+    resp = http_get(url, headers={'User-Agent': 'Python'}, auth=http_auth)
     
     if resp.status_code not in range(200, 299):
         return None
@@ -103,10 +111,7 @@ def is_compliant_repo(repo):
     if readme is not None:
         print b64decode(readme['content'])
 
-parser = OptionParser(usage='''python %prog
-
-Username and password will be found in environment variables
-GITHUB_USERNAME and GITHUB_PASSWORD if not provided in options.''')
+parser = OptionParser(usage='python %prog\n\n' + __doc__.strip())
 
 defaults = dict(username=environ.get('GITHUB_USERNAME', None),
                 password=environ.get('GITHUB_PASSWORD', None),
