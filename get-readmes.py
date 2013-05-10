@@ -59,6 +59,39 @@ def repos():
         for repo in get_data(page_url):
             yield repo
 
+def is_current_repo(repo):
+    ''' Return True for a current repo, False otherwise.
+    '''
+    if repo['pushed_at'] is None:
+        #
+        # Never pushed means probably empty?
+        #
+        logging.debug('%(name)s has never been pushed' % repo)
+        return False
+    
+    create_cutoff = datetime(2013, 5, 6, tzinfo=tzutc())
+    push_cutoff = datetime.now(tzutc()) - timedelta(days=30)
+
+    created_at = dateutil_parse(repo['created_at'])
+    pushed_at = dateutil_parse(repo['pushed_at'])
+    
+    if created_at > create_cutoff:
+        #
+        # Repository created after May 2013, when we started looking.
+        #
+        logging.debug('%(name)s created recently enough: %(created_at)s' % repo)
+        return True
+    
+    if pushed_at > push_cutoff:
+        #
+        # Repository pushed within the past 30 days.
+        #
+        logging.debug('%(name)s updated recently enough: %(pushed_at)s' % repo)
+        return True
+    
+    logging.debug('%(name)s is too old: %(pushed_at)s' % repo)
+    return False
+
 parser = OptionParser(usage='''python %prog
 
 Username and password will be found in environment variables
@@ -84,19 +117,12 @@ if __name__ == '__main__':
     cutoff_dt = right_now - timedelta(days=90)
     
     for repo in repos():
-        if repo['pushed_at'] is None:
+        if not is_current_repo(repo):
             continue
     
         readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
-        created_at = dateutil_parse(repo['created_at'])
-        pushed_at = dateutil_parse(repo['pushed_at'])
-        
-        if pushed_at < cutoff_dt:
-            continue
         
         print 'full_name:', repo['full_name']
-        print 'created_at:', repo['created_at'], (right_now - created_at)
-        print 'pushed_at:', repo['pushed_at'], (right_now - pushed_at)
         
         readme = get_data(readme_url)
         
