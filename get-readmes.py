@@ -92,6 +92,20 @@ def is_current_repo(repo):
     logging.debug('%(name)s is too old: %(pushed_at)s' % repo)
     return False
 
+def is_compliant_repo(repo):
+    ''' Return True for a compliant repo, False otherwise.
+    '''
+    readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
+    readme = get_data(readme_url)
+    
+    #
+    # Repository has a README file.
+    #
+    return bool(readme is not None)
+    
+    if readme is not None:
+        print b64decode(readme['content'])
+
 parser = OptionParser(usage='''python %prog
 
 Username and password will be found in environment variables
@@ -123,11 +137,6 @@ if __name__ == '__main__':
         if not is_current_repo(repo):
             continue
     
-        readme_url = url('/repos/codeforamerica/%(name)s/readme' % repo)
-        
-        logging.info('full_name: %s' % repo['full_name'])
-        
-        #readme = get_data(readme_url)
-        #
-        #if readme is not None:
-        #    print b64decode(readme['content'])
+        log_func = logging.info if is_compliant_repo(repo) else logging.warning
+
+        log_func(repo['full_name'])
