@@ -3,7 +3,7 @@ Repository Observer
 
 Simple script to generate a report on an organization’s Github repositories.
 
-There are two functions in `get-readmes.py` that operate on a decoded JSON
+There are two functions in `lib.py` that operate on a decoded JSON
 representation of a repository from Github’s API:
 
 `is_current_repo()`
@@ -26,9 +26,21 @@ environment with installed dependencies.
 Run
 ---
 
-    python get-readmes.py --help
+Running locally, writing to *stdout*:
 
+    python get-readmes.py --help
     python get-readmes.py -u <github username> -p <github password> -o <github organization>
+
+Deploying to Heroku, with five required environment variables configured and
+a correct remote set up from Git:
+
+    heroku config:set GITHUB_ORGANIZATION=<github organization name> \
+                      GITHUB_USERNAME=<github account username> \
+                      GITHUB_PASSWORD=<github account password> \
+                      AWS_ACCESS_KEY_ID=<amazon access key> \
+                      AWS_SECRET_ACCESS_KEY=<amazon secret key>
+    
+    git push heroku master
 
 Output
 ------

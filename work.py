@@ -3,6 +3,8 @@
 
 Username, password and organization name will be found in environment
 variables GITHUB_USERNAME, GITHUB_PASSWORD and GITHUB_ORGANIZATION.
+Amazon S3 connection parameters will be found in environment variables
+AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 '''
 from os import environ
 from time import sleep
