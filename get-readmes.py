@@ -1,22 +1,13 @@
 #!/usr/bin/env python
 ''' Checks all repositories from a Github organization for compliant READMEs.
-
-Username and password will be found in environment variables
-GITHUB_USERNAME and GITHUB_PASSWORD if not provided in options.
 '''
-from os import environ
 from optparse import OptionParser
-
 import logging
-
 import lib
 
 parser = OptionParser(usage='python %prog\n\n' + __doc__.strip())
 
-defaults = dict(username=environ.get('GITHUB_USERNAME', None),
-                password=environ.get('GITHUB_PASSWORD', None),
-                organization='codeforamerica',
-                loglevel=logging.INFO)
+defaults = dict(username=None, password=None, organization=None, loglevel=logging.INFO)
 
 parser.set_defaults(**defaults)
 
