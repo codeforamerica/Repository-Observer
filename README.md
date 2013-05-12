@@ -37,8 +37,7 @@ Running locally, writing to *stdout*:
 Deploying to Heroku, with five required environment variables configured and
 a correct remote set up from Git:
 
-    heroku config:set GITHUB_ORGANIZATION=<github organization name> \
-                      GITHUB_USERNAME=<github account username> \
+    heroku config:set GITHUB_USERNAME=<github account username> \
                       GITHUB_PASSWORD=<github account password> \
                       AWS_ACCESS_KEY_ID=<amazon access key> \
                       AWS_SECRET_ACCESS_KEY=<amazon secret key>
