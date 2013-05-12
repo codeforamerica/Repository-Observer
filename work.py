@@ -10,7 +10,7 @@ from os import environ
 from time import sleep
 from StringIO import StringIO
 from datetime import datetime
-from boto import connect_s3
+from boto import connect_s3, connect_cloudwatch
 import logging
 import lib
 
@@ -18,9 +18,13 @@ if __name__ == '__main__':
     lib.http_auth = environ['GITHUB_USERNAME'], environ['GITHUB_PASSWORD']
     lib.org_name = environ['GITHUB_ORGANIZATION']
     
+    failures = []
+    
     while True:
         out = StringIO()
         print >> out, '#', datetime.now()
+        
+        passed, failed = 0, 0
     
         for repo in lib.generate_repos():
             if not lib.is_current_repo(repo):
@@ -28,12 +32,22 @@ if __name__ == '__main__':
         
             elif lib.is_compliant_repo(repo):
                 print >> out, 'pass', repo['full_name']
+                passed += 1
     
             else:
                 print >> out, 'fail', repo['full_name']
+                failed += 1
 
         key = connect_s3().get_bucket('github-observer').new_key('observations.txt')
         kwargs = dict(headers={'Content-Type': 'text/plain'}, policy='public-read')
         key.set_contents_from_string(out.getvalue(), **kwargs)
         
-        sleep(5 * 60)
+        failures = (failures + [failed])[-20:]
+        change = failures[-1] - failures[0]
+
+        cloudwatch = connect_cloudwatch()
+        cloudwatch.put_metric_data('Github Observer', 'Passed', passed, unit='Count')
+        cloudwatch.put_metric_data('Github Observer', 'Failed', failed, unit='Count')
+        cloudwatch.put_metric_data('Github Observer', 'Change', change, unit='Count')
+        
+        sleep(3 * 60)
