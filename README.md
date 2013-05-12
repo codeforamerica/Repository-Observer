@@ -8,13 +8,16 @@ representation of a repository from Github’s API:
 
 `is_current_repo()`
 
-Return `True` for a current repo, `False` otherwise. Current repositories
+Returns `True` for a current repo, `False` otherwise. Current repositories
 were created after a cutoff date, or updated recently.
 
 `is_compliant_repo()`
 
-Return `True` for a compliant repo, `False` otherwise. Compliant repositories
-have a valid README file.
+Returns `(boolean, string)` tuple for a repository readme.
+
+First element will be `True` for a compliant repo, `False` otherwise.
+Second element will be a commit hash for the readme or `None`.
+Compliant repositories have a valid README file.
 
 Install
 -------

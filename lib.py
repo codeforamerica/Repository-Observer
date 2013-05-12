@@ -90,7 +90,10 @@ def is_current_repo(repo):
     return False
 
 def is_compliant_repo(repo):
-    ''' Return True for a compliant repo, False otherwise.
+    ''' Return (boolean, string) tuple for a repository readme.
+    
+        First element will be True for a compliant repo, False otherwise.
+        Second element will be a commit hash for the README or None.
     '''
     readme_url = url('/repos/%(full_name)s/readme' % repo)
     readme = get_data(readme_url)
@@ -98,7 +101,7 @@ def is_compliant_repo(repo):
     #
     # Repository has a README file.
     #
-    return bool(readme is not None)
+    return bool(readme is not None), readme['sha'] if readme else None
     
     if readme is not None:
         print b64decode(readme['content'])

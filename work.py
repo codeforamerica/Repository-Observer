@@ -30,12 +30,14 @@ if __name__ == '__main__':
             if not lib.is_current_repo(repo):
                 continue
         
-            elif lib.is_compliant_repo(repo):
-                print >> out, 'pass', repo['full_name']
+            is_compliant, readme_sha = lib.is_compliant_repo(repo)
+            
+            if is_compliant:
+                print >> out, 'pass', repo['full_name'], readme_sha
                 passed += 1
     
             else:
-                print >> out, 'fail', repo['full_name']
+                print >> out, 'fail', repo['full_name'], readme_sha
                 failed += 1
 
         key = connect_s3().get_bucket('github-observer').new_key('observations.txt')
