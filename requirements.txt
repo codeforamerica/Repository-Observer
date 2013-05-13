@@ -1,3 +1,4 @@
 boto
 dateutils
 requests
+jinja2
