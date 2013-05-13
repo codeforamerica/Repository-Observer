@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 ''' Checks all repositories from a Github organization for compliant READMEs.
 '''
+from os.path import dirname
 from optparse import OptionParser
+from jinja2 import Environment, FileSystemLoader
 import logging
 import lib
 
@@ -25,15 +27,16 @@ if __name__ == '__main__':
     logging.basicConfig(level=opts.loglevel, format='%(levelname)s - %(message)s')
     lib.http_auth = (opts.username, opts.password)
     lib.org_name = opts.organization
-
-    for repo in lib.generate_repos():
-        if not lib.is_current_repo(repo):
-            continue
     
-        is_compliant, readme_sha, reasons = lib.is_compliant_repo(repo)
-        
-        if is_compliant:
-            print 'pass', repo['full_name'], readme_sha, reasons
-
-        else:
-            print 'fail', repo['full_name'], readme_sha, reasons
+    repos = filter(lib.is_current_repo, lib.generate_repos())
+    
+    for repo in repos:
+        is_compliant, commit_sha, reasons = lib.is_compliant_repo(repo)
+        repo.update(dict(passed=is_compliant, sha=commit_sha, reasons=reasons))
+    
+    repos.sort(key=lambda repo: (repo['passed'], repo['name'].lower()))
+    
+    env = Environment(loader=FileSystemLoader(dirname(__file__)))
+    tpl = env.get_template('observations.html')
+    
+    print tpl.render(repos=repos)
