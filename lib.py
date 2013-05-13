@@ -93,19 +93,23 @@ def is_compliant_repo(repo):
     ''' Return (boolean, string, list) tuple for a repository readme.
     
         First element will be True for a compliant repo, False otherwise.
-        Second element will be a commit hash for the README or None.
+        Second element will be a commit hash for the repository or None.
         Third element will be a list of strings with reasons for failure.
     '''
     readme_url = url('/repos/%(full_name)s/readme' % repo)
     readme = get_data(readme_url)
     
+    commits_url = url('/repos/%(full_name)s/commits?per_page=1' % repo)
+    commits = get_data(commits_url)
+    commit_hash = commits[0]['sha']
+    
     #
     # Repository has a README file.
     #
     if readme is None:
-        return False, None, ['Missing README']
+        return False, commit_hash, ['Missing README']
     
-    return True, readme['sha'], []
+    return True, commit_hash, []
     
     if readme is not None:
         print b64decode(readme['content'])

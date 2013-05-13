@@ -16,7 +16,7 @@ were created after a cutoff date, or updated recently.
 Returns `(boolean, string, list)` tuple for a repository readme.
 
 First element will be `True` for a compliant repo, `False` otherwise.
-Second element will be a commit hash for the readme or `None`.
+Second element will be a commit hash for the repository or `None`.
 Third element will be a list of strings with reasons for failure.
 Compliant repositories have a valid README file.
 
