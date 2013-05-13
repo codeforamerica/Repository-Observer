@@ -30,10 +30,10 @@ if __name__ == '__main__':
         if not lib.is_current_repo(repo):
             continue
     
-        is_compliant, readme_sha = lib.is_compliant_repo(repo)
+        is_compliant, readme_sha, reasons = lib.is_compliant_repo(repo)
         
         if is_compliant:
-            print 'pass', repo['full_name'], readme_sha
+            print 'pass', repo['full_name'], readme_sha, reasons
 
         else:
-            print 'fail', repo['full_name'], readme_sha
+            print 'fail', repo['full_name'], readme_sha, reasons

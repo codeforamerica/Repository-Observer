@@ -13,10 +13,11 @@ were created after a cutoff date, or updated recently.
 
 `is_compliant_repo()`
 
-Returns `(boolean, string)` tuple for a repository readme.
+Returns `(boolean, string, list)` tuple for a repository readme.
 
 First element will be `True` for a compliant repo, `False` otherwise.
 Second element will be a commit hash for the readme or `None`.
+Third element will be a list of strings with reasons for failure.
 Compliant repositories have a valid README file.
 
 Install
