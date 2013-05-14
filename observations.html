@@ -6,25 +6,27 @@
 </head>
 <body>
 
+<p class="time">{{ timestamp }}</p>
+
 <table>
   {% for repo in repos %}
-    <tr>
-      <td>
-        <a href="https://github.com/{{ repo.full_name }}">{{ repo.name }}</a>
-        (<a href="https://github.com/{{ repo.full_name }}/tree/{{ repo.sha }}">{{ repo.sha |truncate(6,True,'')}}</a>)
+    <tr class="repo-status">
+      <td class="repo">
+        <a href="https://github.com/{{ repo.full_name }}/tree/{{ repo.sha }}">{{ repo.name }}</a>
+        <code><a href="https://github.com/{{ repo.full_name }}/tree/{{ repo.sha }}">{{ repo.sha |truncate(6,True,'')}}</a></code>
       </td>
-      <td>
+      <td class="status">
         {% if repo.passed %}
-          P
+          Pass
         {% else %}
-          F
+          Fail
         {% endif %}
       </td>
     </tr>
     {% if repo.reasons %}
-      <tr>
-        <td colspan="2">
-          {{ repo.reasons |join(', ')}}
+      <tr class="reasons">
+        <td colspan="2" class="reasons">
+          {{ repo.reasons |join(', ')|escape}}
         </td>
       </tr>
     {% endif %}
