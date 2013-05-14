@@ -9,10 +9,11 @@ and AWS_SECRET_ACCESS_KEY (http://code.google.com/p/boto/wiki/BotoConfig).
 '''
 from os import environ
 from time import sleep
+from os.path import dirname
 from optparse import OptionParser
-from StringIO import StringIO
 from datetime import datetime
 from boto import connect_s3, connect_cloudwatch
+from jinja2 import Environment, FileSystemLoader
 import logging
 import lib
 
@@ -40,28 +41,28 @@ if __name__ == '__main__':
     failures = []
     
     while True:
-        out = StringIO()
-        print >> out, '#', datetime.now()
-        
         passed, failed = 0, 0
-    
-        for repo in lib.generate_repos():
-            if not lib.is_current_repo(repo):
-                continue
+        repos = filter(lib.is_current_repo, lib.generate_repos())
         
-            is_compliant, readme_sha, reasons = lib.is_compliant_repo(repo)
+        for repo in repos:
+            is_compliant, commit_sha, reasons = lib.is_compliant_repo(repo)
+            repo.update(dict(passed=is_compliant, sha=commit_sha, reasons=reasons))
             
             if is_compliant:
-                print >> out, 'pass', repo['full_name'], readme_sha, reasons
                 passed += 1
     
             else:
-                print >> out, 'fail', repo['full_name'], readme_sha, reasons
                 failed += 1
+        
+        repos.sort(key=lambda repo: (repo['passed'], repo['name'].lower()))
 
-        key = connect_s3().get_bucket(opts.bucket).new_key('observations.txt')
-        kwargs = dict(headers={'Content-Type': 'text/plain'}, policy='public-read')
-        key.set_contents_from_string(out.getvalue(), **kwargs)
+        key = connect_s3().get_bucket(opts.bucket).new_key('observations.html')
+        env = Environment(loader=FileSystemLoader(dirname(__file__)))
+        tpl = env.get_template('observations.html')
+        
+        html = tpl.render(repos=repos, timestamp=str(datetime.now()))
+        kwargs = dict(headers={'Content-Type': 'text/html'}, policy='public-read')
+        key.set_contents_from_string(html, **kwargs)
         
         failures = (failures + [failed])[-20:]
         change = failures[-1] - failures[0]
