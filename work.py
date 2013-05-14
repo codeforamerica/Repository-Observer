@@ -75,12 +75,10 @@ if __name__ == '__main__':
         
         #
         # Save pass/fail metrics to Cloudwatch.
-        # Use a linear convolution kernel over past hour of failure counts.
         #
         k = 15
         failures = (failures + [failed])[-k:]
-        kernel = [n * 1./(k - 1) - .5 for n in range(k)]
-        change = sum([n * f for (n, f) in zip(kernel, failures)])
+        change = failures[-1] - failures[0]
 
         cloudwatch = connect_cloudwatch()
         cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
