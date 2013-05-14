@@ -41,6 +41,9 @@ if __name__ == '__main__':
     failures = []
     
     while True:
+        #
+        # List all current repositories.
+        #
         passed, failed = 0, 0
         repos = filter(lib.is_current_repo, lib.generate_repos())
         
@@ -54,22 +57,34 @@ if __name__ == '__main__':
             else:
                 failed += 1
         
-        repos.sort(key=lambda repo: (repo['passed'], repo['name'].lower()))
+        repos.sort(key=lambda repo: (int(repo['passed']), repo['name'].lower()))
 
+        #
+        # Prepare destination and template for output HTML.
+        #
         key = connect_s3().get_bucket(opts.bucket).new_key('observations.html')
         env = Environment(loader=FileSystemLoader(dirname(__file__)))
         tpl = env.get_template('observations.html')
         
+        #
+        # Render and upload output HTML to S3.
+        #
         html = tpl.render(repos=repos, timestamp=str(datetime.now()))
         kwargs = dict(headers={'Content-Type': 'text/html'}, policy='public-read')
         key.set_contents_from_string(html, **kwargs)
         
-        failures = (failures + [failed])[-20:]
-        change = failures[-1] - failures[0]
+        #
+        # Save pass/fail metrics to Cloudwatch.
+        # Use a linear convolution kernel over past hour of failure counts.
+        #
+        k = 15
+        failures = (failures + [failed])[-k:]
+        kernel = [n * 1./(k - 1) - .5 for n in range(k)]
+        change = sum([n * f for (n, f) in zip(kernel, failures)])
 
         cloudwatch = connect_cloudwatch()
         cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
         cloudwatch.put_metric_data(opts.namespace, 'Failed', failed, unit='Count')
         cloudwatch.put_metric_data(opts.namespace, 'Change', change, unit='Count')
         
-        sleep(3 * 60)
+        sleep(60 * 60/k)
