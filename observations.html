@@ -2,7 +2,35 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<title>Status</title>
+	<title>Observations (Repository Observer)</title>
+    <style title="text/css">
+    <!--
+    
+        body
+        {
+            color: #333;
+            background: #eee;
+            margin: 1em 0;
+            font-family: Sentinel, Georgia, sans-serif;
+            font-size: 16px;
+        }
+        
+        a { white-space: nowrap }
+        em { background-color: #fff }
+        code { font-size: 12px }
+        code:before { content: '(' }
+        code:after { content: ')' }
+    
+        body>*
+        {
+            margin-left: 100px;
+        }
+        
+        table tr td { padding-right: 32px }
+        table tr.repo-status td { padding-top: 8px }
+        
+    -->
+    </style>
 </head>
 <body>
 
@@ -12,14 +40,14 @@
   {% for repo in repos %}
     <tr class="repo-status">
       <td class="repo">
-        <a href="https://github.com/{{ repo.full_name }}/tree/{{ repo.sha }}">{{ repo.name }}</a>
+        <a href="https://github.com/{{ repo.full_name }}">{{ repo.name }}</a>
         <code><a href="https://github.com/{{ repo.full_name }}/tree/{{ repo.sha }}">{{ repo.sha |truncate(6,True,'')}}</a></code>
       </td>
       <td class="status">
         {% if repo.passed %}
-          Pass
+          <img src="http://status.aws.amazon.com/images/status0.gif" alt="Pass" width="22" height="22">
         {% else %}
-          Fail
+          <img src="http://status.aws.amazon.com/images/status3.gif" alt="Fail" width="22" height="22">
         {% endif %}
       </td>
     </tr>
