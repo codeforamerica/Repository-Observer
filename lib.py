@@ -121,7 +121,7 @@ def is_compliant_repo(repo):
     reasons = []
     
     if not has_installation_section(soup):
-        reasons.append('no installation guide')
+        reasons.append('No installation guide')
     
     #
     # Done.
