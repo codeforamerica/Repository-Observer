@@ -21,6 +21,7 @@ org_name = None
 
 any_pat = compile(r'.+')
 head_pat = compile(r'^h[123]$', I)
+subhead_pat = compile(r'^h[23456]$', I)
 body_tags = 'p', 'pre', 'ol', 'ul'
 
 def url(path):
@@ -137,7 +138,32 @@ def has_installation_section(soup):
         Looks for headers with words like 'install', 'build', or 'deploy'.
     '''
     texts = soup.findAll(text=compile(r'\bInstall(ation)?\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
-    heads = [text.findParent(head_pat) for text in texts if text.findParent(head_pat)]
-    found = [True for head in heads if getattr(head.findNextSibling(any_pat), 'name', None) in body_tags]
+    found = filter(has_content, texts)
     
     return bool(found)
+
+def has_content(text):
+    ''' Return true if the text element looks like a head with some content under it.
+    '''
+    head = text.findParent(head_pat)
+    
+    if not head:
+        # Not in a header
+        return False
+    
+    sibling = head.findNextSibling(any_pat)
+    
+    if not hasattr(sibling, 'name'):
+        # Found nothing
+        return False
+    
+    if sibling.name in body_tags:
+        # Found something
+        return True
+    
+    if subhead_pat.match(sibling.name) and sibling.name > head.name:
+        # Found sub-sections
+        return True
+    
+    # Who knows
+    return False
