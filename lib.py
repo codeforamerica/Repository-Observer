@@ -1,12 +1,15 @@
 from datetime import datetime, timedelta
 from urlparse import urljoin
 from base64 import b64decode
+from re import compile, I
 from math import ceil
 
 import logging
 
 from requests import get as http_get
 from dateutil.parser import parse as dateutil_parse
+from BeautifulSoup import BeautifulSoup
+from markdown2 import markdown
 from dateutil.tz import tzutc
 
 #
@@ -15,6 +18,10 @@ from dateutil.tz import tzutc
 per_page = 25
 http_auth = None
 org_name = None
+
+any_pat = compile(r'.+')
+head_pat = compile(r'^h\d$', I)
+body_tags = 'p', 'pre', 'ol', 'ul'
 
 def url(path):
     ''' Join an absolute path to the Github API base.
@@ -109,7 +116,28 @@ def is_compliant_repo(repo):
     if readme is None:
         return False, commit_hash, ['Missing README']
     
-    return True, commit_hash, []
+    text = b64decode(readme['content'])
+    soup = BeautifulSoup(markdown(text))
+    reasons = []
     
-    if readme is not None:
-        print b64decode(readme['content'])
+    if not has_installation_section(soup):
+        reasons.append('no installation guide')
+    
+    #
+    # Done.
+    #
+    if reasons:
+        return False, commit_hash, reasons
+    
+    return True, commit_hash, []
+
+def has_installation_section(soup):
+    ''' Return true if the tag soup has a populated installation section.
+    
+        Looks for headers with words like 'install', 'build', or 'deploy'.
+    '''
+    texts = soup.findAll(text=compile(r'\bInstall(ation)\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
+    heads = [text.findParent(head_pat) for text in texts if text.findParent(head_pat)]
+    found = [True for head in heads if getattr(head.findNext(any_pat), 'name', None) in body_tags]
+    
+    return bool(found)

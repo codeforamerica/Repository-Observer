@@ -2,3 +2,5 @@ boto
 dateutils
 requests
 jinja2
+markdown2
+BeautifulSoup
