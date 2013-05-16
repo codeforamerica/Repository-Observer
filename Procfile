@@ -1,1 +1,1 @@
-worker: python work.py s3://github-observer/observations.html
+worker: python work.py --send-counts s3://github-observer/observations.html

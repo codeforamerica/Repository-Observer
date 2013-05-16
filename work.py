@@ -24,7 +24,7 @@ parser = OptionParser(usage='python %prog <destination>\n\n' + __doc__.strip())
 defaults = dict(username=environ.get('GITHUB_USERNAME', None),
                 password=environ.get('GITHUB_PASSWORD', None),
                 organization='codeforamerica', namespace='Github Observer',
-                loglevel=logging.INFO)
+                send_counts=False, loglevel=logging.INFO)
 
 parser.set_defaults(**defaults)
 
@@ -32,6 +32,7 @@ parser.add_option('-u', '--username', dest='username', help='Github username, de
 parser.add_option('-p', '--password', dest='password', help='Github password, defaults to GITHUB_PASSWORD environment variable (%s).' % repr(defaults['password']))
 parser.add_option('-o', '--organization', dest='organization', help='Github organization, default %s.' % repr(defaults['organization']))
 parser.add_option('-n', '--namespace', dest='namespace', help='Cloudwatch namespace, default %s.' % repr(defaults['namespace']))
+parser.add_option('--send-counts', dest='send_counts', action='store_true', help='Turn on sending to Cloudwatch.')
 
 if __name__ == '__main__':
     opts, (destination, ) = parser.parse_args()
@@ -88,9 +89,10 @@ if __name__ == '__main__':
         failures = (failures + [failed])[-k:]
         change = failures[-1] - failures[0]
 
-        cloudwatch = connect_cloudwatch()
-        cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
-        cloudwatch.put_metric_data(opts.namespace, 'Failed', failed, unit='Count')
-        cloudwatch.put_metric_data(opts.namespace, 'Change', change, unit='Count')
+        if opts.send_counts:
+            cloudwatch = connect_cloudwatch()
+            cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
+            cloudwatch.put_metric_data(opts.namespace, 'Failed', failed, unit='Count')
+            cloudwatch.put_metric_data(opts.namespace, 'Change', change, unit='Count')
         
         sleep(60 * 60/k)
