@@ -1,1 +1,1 @@
-worker: python work.py
+worker: python work.py s3://github-observer/observations.html

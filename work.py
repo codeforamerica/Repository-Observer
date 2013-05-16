@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 ''' Checks all repositories from a Github organization for compliant READMEs.
 
-Runs in a long-running loop, results are posted to an S3 page.
+Runs in a long-running loop, results are sent to the destination argument,
+which may be a local file name like 'observations.html' or a remote S3 path
+like 's3://bucket-name/observations.html' (the 's3://' prefix is required).
 
 Amazon S3 connection parameters will be looked for in boto's standard config
 locations: /etc/boto.cfg, ~/.boto  or environment variables AWS_ACCESS_KEY_ID
@@ -17,12 +19,12 @@ from jinja2 import Environment, FileSystemLoader
 import logging
 import lib
 
-parser = OptionParser(usage='python %prog\n\n' + __doc__.strip())
+parser = OptionParser(usage='python %prog <destination>\n\n' + __doc__.strip())
 
 defaults = dict(username=environ.get('GITHUB_USERNAME', None),
                 password=environ.get('GITHUB_PASSWORD', None),
-                organization='codeforamerica', bucket='github-observer',
-                namespace='Github Observer', loglevel=logging.INFO)
+                organization='codeforamerica', namespace='Github Observer',
+                loglevel=logging.INFO)
 
 parser.set_defaults(**defaults)
 
@@ -30,10 +32,9 @@ parser.add_option('-u', '--username', dest='username', help='Github username, de
 parser.add_option('-p', '--password', dest='password', help='Github password, defaults to GITHUB_PASSWORD environment variable (%s).' % repr(defaults['password']))
 parser.add_option('-o', '--organization', dest='organization', help='Github organization, default %s.' % repr(defaults['organization']))
 parser.add_option('-n', '--namespace', dest='namespace', help='Cloudwatch namespace, default %s.' % repr(defaults['namespace']))
-parser.add_option('-b', '--bucket', dest='bucket', help='S3 destination bucket, default %s.' % repr(defaults['bucket']))
 
 if __name__ == '__main__':
-    opts, args = parser.parse_args()
+    opts, (destination, ) = parser.parse_args()
     
     lib.http_auth = opts.username, opts.password
     lib.org_name = opts.organization
@@ -60,18 +61,25 @@ if __name__ == '__main__':
         repos.sort(key=lambda repo: (int(repo['passed']), repo['name'].lower()))
 
         #
-        # Prepare destination and template for output HTML.
+        # Prepare template for output HTML and render.
         #
-        key = connect_s3().get_bucket(opts.bucket).new_key('observations.html')
         env = Environment(loader=FileSystemLoader(dirname(__file__)))
         tpl = env.get_template('observations.html')
+
+        html = tpl.render(repos=repos, timestamp=str(datetime.now()))
         
         #
-        # Render and upload output HTML to S3.
+        # Output HTML.
         #
-        html = tpl.render(repos=repos, timestamp=str(datetime.now()))
-        kwargs = dict(headers={'Content-Type': 'text/html'}, policy='public-read')
-        key.set_contents_from_string(html, **kwargs)
+        if destination.startswith('s3://'):
+            bucket_name, key_name = destination[5:].split('/', 1)
+            key = connect_s3().get_bucket(bucket_name).new_key(key_name)
+            kwargs = dict(headers={'Content-Type': 'text/html'}, policy='public-read')
+            key.set_contents_from_string(html, **kwargs)
+        
+        else:
+            with open(destination, 'w') as out:
+                out.write(html)
         
         #
         # Save pass/fail metrics to Cloudwatch.
