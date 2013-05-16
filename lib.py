@@ -138,6 +138,6 @@ def has_installation_section(soup):
     '''
     texts = soup.findAll(text=compile(r'\bInstall(ation)\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
     heads = [text.findParent(head_pat) for text in texts if text.findParent(head_pat)]
-    found = [True for head in heads if getattr(head.findNext(any_pat), 'name', None) in body_tags]
+    found = [True for head in heads if getattr(head.findNextSibling(any_pat), 'name', None) in body_tags]
     
     return bool(found)
