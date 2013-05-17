@@ -137,7 +137,7 @@ def has_installation_section(soup):
     
         Looks for headers with words like 'install', 'build', or 'deploy'.
     '''
-    texts = soup.findAll(text=compile(r'\bInstall(ation)?\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
+    texts = soup.findAll(text=compile(r'\bInstall(ation|ing)?\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
     found = filter(has_content, texts)
     
     return bool(found)
