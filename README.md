@@ -30,12 +30,12 @@ environment with installed dependencies.
 Run
 ---
 
-Running locally, writing to *stdout*:
+Running locally, writing to local HTML output:
 
-    python get-readmes.py --help
-    python get-readmes.py -u <github username> -p <github password> -o <github organization>
+    python work.py --help
+    python work.py -u <github username> -p <github password> -o <github organization> output.html
 
-Deploying to Heroku, with five required environment variables configured and
+Deploying to Heroku, with four required environment variables configured and
 a correct remote set up from Git:
 
     heroku config:set GITHUB_USERNAME=<github account username> \
