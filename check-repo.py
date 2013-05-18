@@ -43,5 +43,9 @@ if __name__ == '__main__':
         soup = BeautifulSoup(markdown(text))
         reasons = []
         
+        if lib.has_relocated_section(soup):
+            print 'Has relocated'
+            continue
+    
         if not lib.has_installation_section(soup):
             print 'No installation guide'

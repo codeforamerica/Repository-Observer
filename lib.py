@@ -121,6 +121,9 @@ def is_compliant_repo(repo):
     soup = BeautifulSoup(markdown(text))
     reasons = []
     
+    if has_relocated_section(soup):
+        return True, commit_hash, []
+    
     if not has_installation_section(soup):
         reasons.append('No installation guide')
     
@@ -131,6 +134,16 @@ def is_compliant_repo(repo):
         return False, commit_hash, reasons
     
     return True, commit_hash, []
+
+def has_relocated_section(soup):
+    ''' Return true if the tag soup has a relocation section.
+    
+        Looks for headers with words including 'repository has moved'
+    '''
+    texts = soup.findAll(text=compile(r'\bRepository has moved\b', I))
+    found = filter(has_content, texts)
+    
+    return bool(found)
 
 def has_installation_section(soup):
     ''' Return true if the tag soup has a populated installation section.
