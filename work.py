@@ -10,13 +10,15 @@ locations: /etc/boto.cfg, ~/.boto  or environment variables AWS_ACCESS_KEY_ID
 and AWS_SECRET_ACCESS_KEY (http://code.google.com/p/boto/wiki/BotoConfig).
 '''
 from os import environ
-from time import sleep
 from os.path import dirname
+from time import sleep, time
+from operator import itemgetter
 from optparse import OptionParser
-from datetime import datetime
+from datetime import datetime, timedelta
 from boto import connect_s3, connect_cloudwatch
 from jinja2 import Environment, FileSystemLoader
 import logging
+import json
 import lib
 
 parser = OptionParser(usage='python %prog <destination>\n\n' + __doc__.strip())
@@ -62,12 +64,29 @@ if __name__ == '__main__':
         repos.sort(key=lambda repo: (int(repo['passed']), repo['name'].lower()))
 
         #
+        # Gather metrics.
+        #
+        cloudwatch = connect_cloudwatch()
+
+        period = 60 * 60
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=7)
+        
+        pass_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Passed', opts.namespace, ['Average'])
+        fail_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Failed', opts.namespace, ['Average'])
+
+        pass_history = [int(round(m['Average'])) for m in sorted(pass_history, key=itemgetter('Timestamp'))]
+        fail_history = [int(round(m['Average'])) for m in sorted(fail_history, key=itemgetter('Timestamp'))]
+        
+        history_json = json.dumps(dict(period=period, passed=pass_history, failed=fail_history))
+
+        #
         # Prepare template for output HTML and render.
         #
         env = Environment(loader=FileSystemLoader(dirname(__file__)))
         tpl = env.get_template('observations.html')
 
-        html = tpl.render(repos=repos, timestamp=str(datetime.now()))
+        html = tpl.render(repos=repos, history=history_json, timestamp=int(time()), datetime=str(datetime.now())[:19])
         
         #
         # Output HTML.
@@ -90,7 +109,6 @@ if __name__ == '__main__':
         change = failures[-1] - failures[0]
 
         if opts.send_counts:
-            cloudwatch = connect_cloudwatch()
             cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
             cloudwatch.put_metric_data(opts.namespace, 'Failed', failed, unit='Count')
             cloudwatch.put_metric_data(opts.namespace, 'Change', change, unit='Count')

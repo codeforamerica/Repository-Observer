@@ -31,10 +31,17 @@
         
     -->
     </style>
+    <script type="application/javascript">
+    <!--
+    
+        var history = {{ history }};
+    
+    //-->
+    </script>
 </head>
 <body>
 
-<p class="time">{{ timestamp }}</p>
+<p class="time" data-timestamp="{{ timestamp }}">{{ datetime }}</p>
 
 <table>
   {% for repo in repos %}
