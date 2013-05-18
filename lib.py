@@ -20,7 +20,7 @@ http_auth = None
 org_name = None
 
 any_pat = compile(r'.+')
-head_pat = compile(r'^h[123]$', I)
+head_pat = compile(r'^h[1234]$', I)
 subhead_pat = compile(r'^h[23456]$', I)
 body_tags = 'p', 'pre', 'ol', 'ul'
 
