@@ -148,9 +148,9 @@ def has_relocated_section(soup):
 def has_installation_section(soup):
     ''' Return true if the tag soup has a populated installation section.
     
-        Looks for headers with words like 'install', 'build', or 'deploy'.
+        Looks for headers with words like 'install', 'build', 'setup', or 'deploy'.
     '''
-    texts = soup.findAll(text=compile(r'\bInstall(ation|ing)?\b|\bBuild(ing)?\b|\bDeploy(ing|ment)?\b', I))
+    texts = soup.findAll(text=compile(r'\bInstall(ation|ing)?\b|\bBuild(ing)?\b|\bSetup\b|\bDeploy(ing|ment)?\b', I))
     found = filter(has_content, texts)
     
     return bool(found)
