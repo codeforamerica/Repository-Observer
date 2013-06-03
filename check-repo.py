@@ -7,12 +7,8 @@ and AWS_SECRET_ACCESS_KEY (http://code.google.com/p/boto/wiki/BotoConfig).
 '''
 from os import environ
 from optparse import OptionParser
-from base64 import b64decode
 import logging
 import lib
-
-from BeautifulSoup import BeautifulSoup
-from markdown2 import markdown
 
 parser = OptionParser(usage='python %prog <repo name(s)>\n\n' + __doc__.strip())
 
@@ -32,20 +28,8 @@ if __name__ == '__main__':
     
     for repo_name in repo_names:
         print repo_name, '...'
-
-        readme = lib.get_data(lib.url('/repos/%s/readme' % repo_name))
         
-        if readme is None:
-            print 'Missing README'
-            continue
+        passed, _, reasons = lib.is_compliant_repo(dict(full_name=repo_name))
         
-        text = b64decode(readme['content'])
-        soup = BeautifulSoup(markdown(text))
-        reasons = []
-        
-        if lib.has_relocated_section(soup):
-            print 'Has relocated'
-            continue
-    
-        if not lib.has_installation_section(soup):
-            print 'No installation guide'
+        if not passed:
+            print ', '.join(reasons)
