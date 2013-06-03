@@ -36,6 +36,11 @@ parser.add_option('-o', '--organization', dest='organization', help='Github orga
 parser.add_option('-n', '--namespace', dest='namespace', help='Cloudwatch namespace, default %s.' % repr(defaults['namespace']))
 parser.add_option('--send-counts', dest='send_counts', action='store_true', help='Turn on sending to Cloudwatch.')
 
+#
+# Exceptional repositories.
+#
+lib.repos_without_installation_guides.add('codeforamerica/cfa_coder_sounds')
+
 if __name__ == '__main__':
     opts, (destination, ) = parser.parse_args()
     

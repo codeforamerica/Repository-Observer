@@ -24,6 +24,8 @@ head_pat = compile(r'^h[1234]$', I)
 subhead_pat = compile(r'^h[23456]$', I)
 body_tags = 'p', 'pre', 'ol', 'ul'
 
+repos_without_installation_guides = set()
+
 def url(path):
     ''' Join an absolute path to the Github API base.
     '''
@@ -125,7 +127,8 @@ def is_compliant_repo(repo):
         return True, commit_hash, []
     
     if not has_installation_section(soup):
-        reasons.append('No installation guide')
+        if repo['full_name'] not in repos_without_installation_guides:
+            reasons.append('No installation guide')
     
     #
     # Done.
