@@ -1,0 +1,12 @@
+{
+    "repos": [
+        {
+            "name": "deployit",
+            "owner": "codeforamerica"
+        },
+        {
+            "name": "Repository-Observer",
+            "owner": "codeforamerica"
+        }
+    ]
+}

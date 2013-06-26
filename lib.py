@@ -12,6 +12,8 @@ from BeautifulSoup import BeautifulSoup
 from markdown2 import markdown
 from dateutil.tz import tzutc
 
+
+logging.basicConfig(level=logging.DEBUG)
 #
 # Global configuration parameters, some overriden by command-line opts below.
 #
@@ -43,6 +45,48 @@ def get_data(url):
     
     return resp.json()
 
+def get_forks(repo_name, owner):
+    ''' Get list of forks for a repo
+    '''
+    page_url = url('/repos/%s/%s/forks' % (owner, repo_name))
+    return get_data(page_url)
+
+def get_pulls(repo_name, owner, state):
+    ''' Get list of pull requests for a repo
+        state can be "open" or "closed"
+    '''
+    # 
+    # http://developer.github.com/v3/pulls/#list-pull-requests
+    # 
+    pulls_url = url('/repos/%s/%s/pulls?state=%s' % 
+        (owner, repo_name, state))
+    return get_data(pulls_url)
+
+
+def get_issues(repo_name, owner, state):
+    ''' Get list of issues for a repo
+        State can be open or closed
+    '''
+    # 
+    # http://developer.github.com/v3/issues/#list-issues-for-a-repository
+    # 
+    issues_url = url('/repos/%s/%s/issues?state=%s' % 
+        (owner, repo_name, state))
+    return get_data(issues_url)
+
+def get_repo_info(repo_name, owner):
+    ''' Get a dictionary of all repo info.
+    '''
+    forks = get_forks(repo_name, owner)
+    open_pulls = get_pulls(repo_name, owner, 'open')
+    closed_pulls = get_pulls(repo_name, owner, 'closed')
+    open_issues = get_pulls(repo_name, owner, 'open')
+    closed_issues = get_pulls(repo_name, owner,'closed')
+
+    return dict(forks=forks, open_pulls=open_pulls, closed_pulls=closed_pulls,
+        open_issues=open_issues, closed_issues=closed_issues)
+
+
 def generate_repos():
     ''' Generate list of repo dictionaries.
     '''
@@ -61,7 +105,8 @@ def generate_repos():
         #
         # http://developer.github.com/v3/repos/#list-organization-repositories
         #
-        page_url = url('/orgs/%s/repos?per_page=%d&page=%d' % (org_name, per_page, page))
+        page_url = url('/orgs/%s/repos?per_page=%d&page=%d' % 
+            (org_name, per_page, page))
 
         for repo in get_data(page_url):
             yield repo
@@ -74,6 +119,13 @@ def is_current_repo(repo):
         # Never pushed means probably empty?
         #
         logging.debug('%(name)s has never been pushed' % repo)
+        return False
+
+    if repo['size'] is 0:
+        #
+        # 0 size means probably empty?
+        #
+        logging.debug('%(name)s has a size of 0' % repo)
         return False
     
     create_cutoff = datetime(2013, 5, 6, tzinfo=tzutc())
@@ -111,7 +163,11 @@ def is_compliant_repo(repo):
     
     commits_url = url('/repos/%(full_name)s/commits?per_page=1' % repo)
     commits = get_data(commits_url)
-    commit_hash = commits[0]['sha']
+    commit_hash = None
+    if commits:
+        commit_hash = commits[0]['sha']
+    else:
+        logging.debug('Could not get commits for %(full_name)s' % repo)
     
     #
     # Repository has a README file.
