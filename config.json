@@ -1,12 +1,34 @@
 {
     "repos": [
         {
-            "name": "deployit",
+            "name": "brigade",
             "owner": "codeforamerica"
         },
         {
-            "name": "Repository-Observer",
+            "name": "ckan",
+            "owner": "okfn"
+        },
+        {
+            "name": "councilmatic", 
             "owner": "codeforamerica"
+        },
+        {
+            "name": "localwiki", 
+            "owner": "localwiki"
+        },
+        {
+            "name": "OpenTreeMap", 
+            "owner": "azavea"
+        },
+        {
+            "name": "procure-io", 
+            "owner": "dobtco"
+        },
+        {
+            "name": "petitions", 
+            "owner": "WhiteHouse"
         }
     ]
 }
+
+

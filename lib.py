@@ -45,11 +45,45 @@ def get_data(url):
     
     return resp.json()
 
+def get_star_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s/stargazers' % (owner, repo_name))
+    data = get_data(page_url)
+    if not data:
+        return 0
+    return len(data)
+
+def get_watcher_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s' % (owner, repo_name))
+    repo = get_data(page_url)
+    if not repo:
+        return 0
+    return repo['watchers']
+
+def get_contributor_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s/contributors' % (owner, repo_name))
+    data = get_data(page_url)
+    if not data:
+        return 0
+    return len(get_data(page_url))
+
 def get_forks(repo_name, owner):
     ''' Get list of forks for a repo
     '''
     page_url = url('/repos/%s/%s/forks' % (owner, repo_name))
-    return get_data(page_url)
+    data = get_data(page_url)
+    if not data:
+        return None
+    forks = []
+    for fork in data:
+        forks.append(dict(name=fork['full_name'], created_at=fork['created_at'],
+        updated_at=fork['updated_at'], pushed_at=fork['pushed_at']))
+    return forks
 
 def get_pulls(repo_name, owner, state):
     ''' Get list of pull requests for a repo
@@ -60,7 +94,18 @@ def get_pulls(repo_name, owner, state):
     # 
     pulls_url = url('/repos/%s/%s/pulls?state=%s' % 
         (owner, repo_name, state))
-    return get_data(pulls_url)
+    data = get_data(pulls_url)
+    if not data:
+        return None
+    pulls =[]
+    for pull in data:
+        pulls.append(dict(html_url=pull['html_url'], number=pull['number'], 
+            title=pull['title'], body=pull['body'], 
+            created_at=pull['created_at'], updated_at=pull['updated_at'], 
+            closed_at=pull['closed_at'], state=pull['state'], 
+            username=pull['user']['login'], avatar_url=pull['user']['avatar_url']))
+
+    return pulls
 
 
 def get_issues(repo_name, owner, state):
@@ -72,19 +117,39 @@ def get_issues(repo_name, owner, state):
     # 
     issues_url = url('/repos/%s/%s/issues?state=%s' % 
         (owner, repo_name, state))
-    return get_data(issues_url)
+    data = get_data(issues_url)
+    if not data:
+        return None
+    issues = []
+    for issue in data:
+        issues.append(dict(html_url=issue['html_url'], number=issue['number'],
+            title=issue['title'], body=issue['body'], comments=issue['comments'],
+            created_at=issue['created_at'], updated_at=issue['updated_at'],
+            closed_at=issue['closed_at'], state=issue['state'],
+            username=issue['user']['login'], avatar_url=issue['user']['avatar_url']))
+
+    return issues
 
 def get_repo_info(repo_name, owner):
     ''' Get a dictionary of all repo info.
     '''
     forks = get_forks(repo_name, owner)
-    open_pulls = get_pulls(repo_name, owner, 'open')
-    closed_pulls = get_pulls(repo_name, owner, 'closed')
-    open_issues = get_pulls(repo_name, owner, 'open')
-    closed_issues = get_pulls(repo_name, owner,'closed')
 
-    return dict(forks=forks, open_pulls=open_pulls, closed_pulls=closed_pulls,
-        open_issues=open_issues, closed_issues=closed_issues)
+    pulls = []
+    pulls.append(get_pulls(repo_name, owner, 'open'))
+    pulls.append(get_pulls(repo_name, owner, 'closed'))
+
+    issues = []
+    issues.append(get_issues(repo_name, owner, 'open'))
+    issues.append(get_issues(repo_name, owner,'closed'))
+
+    star_count = get_star_count(repo_name, owner)
+    watch_count = get_watcher_count(repo_name, owner)
+    cont_count = get_contributor_count(repo_name, owner)
+
+    return dict(forks=forks, pulls=pulls, issues=issues,
+        star_count=star_count, watch_count=watch_count, 
+        contributor_count=cont_count)
 
 
 def generate_repos():

@@ -28,7 +28,7 @@ defaults = dict(username=environ.get('GITHUB_USERNAME', None),
                 organization='codeforamerica', namespace='Github Observer',
                 send_counts=False, loglevel=logging.INFO,
                 fetch=False, config='./config.json', 
-                fetch_dest='s3://data.codeforamerica.org/repos/repo_info.json')
+                fetch_dest='s3://data.codeforamerica.org/repos/')
 
 parser.set_defaults(**defaults)
 
@@ -37,7 +37,7 @@ parser.add_option('-p', '--password', dest='password', help='Github password, de
 parser.add_option('-o', '--organization', dest='organization', help='Github organization, default %s.' % repr(defaults['organization']))
 parser.add_option('-n', '--namespace', dest='namespace', help='Cloudwatch namespace, default %s.' % repr(defaults['namespace']))
 parser.add_option('-c', '--config', dest='config', help='JSON list of repos to fetch, default %s.' % repr(defaults['config']))
-parser.add_option('-d', '--datadest', dest='fetch_dest', help='Dest for saving JSON repo info, default %s.' % repr(defaults['fetch_dest']))
+parser.add_option('-d', '--datadest', dest='fetch_dest', help='Directory to save JSON repo info to, default %s.' % repr(defaults['fetch_dest']))
 parser.add_option('--fetch', dest='fetch', action='store_true', help='Fetch data from list of repos.')
 parser.add_option('--send-counts', dest='send_counts', action='store_true', help='Turn on sending to Cloudwatch.')
 
@@ -91,9 +91,41 @@ if __name__ == '__main__':
     failures = []
     
     while True:
+        # 
+        # Metric settings
+        # 
+        cloudwatch = connect_cloudwatch()
+
+        period = 60 * 60
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=7)
+
+
         if opts.fetch:
-            jdata = fetch_repo_info(opts.config)
-            output_data(json.dumps(jdata), opts.fetch_dest, 'json')
+            repo_data = fetch_repo_info(opts.config)
+            for arepo in repo_data:
+                repo_dest = opts.fetch_dest + arepo['name'] + '.json'
+                output_data(json.dumps(arepo), repo_dest, 'json')
+
+                watch_hist = cloudwatch.get_metric_statistics(period, start_dt,
+                    end_dt, '%s_watchers' % arepo['name'], 
+                    opts.namespace, ['Average'])
+
+                stars_hist = cloudwatch.get_metric_statistics(period, start_dt,
+                    end_dt, '%s_stars' % arepo['name'], opts.namespace, 
+                    ['Average'])
+
+                contributors_hist = cloudwatch.get_metric_statistics(period, 
+                    start_dt, end_dt, '%s_contributors' % arepo['name'], opts.namespace, ['Average'])
+
+                if opts.send_counts:
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_watchers' % arepo['name'], arepo['watch_count'], unit='Count')
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_stars' % arepo['name'], arepo['star_count'], unit='Count')
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_contributors' % arepo['name'], arepo['contributor_count'], unit='Count')
+
 
         #
         # List all current repositories.
@@ -118,11 +150,6 @@ if __name__ == '__main__':
         #
         # Gather metrics.
         #
-        cloudwatch = connect_cloudwatch()
-
-        period = 60 * 60
-        end_dt = datetime.now()
-        start_dt = end_dt - timedelta(days=7)
         
         pass_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Passed', opts.namespace, ['Average'])
         fail_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Failed', opts.namespace, ['Average'])
@@ -131,6 +158,7 @@ if __name__ == '__main__':
         fail_history = [int(round(m['Average'])) for m in sorted(fail_history, key=itemgetter('Timestamp'))]
         
         history_json = json.dumps(dict(period=period, passed=pass_history, failed=fail_history))
+
 
         #
         # Prepare template for output HTML and render.
