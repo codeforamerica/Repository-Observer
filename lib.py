@@ -50,6 +50,8 @@ def get_forks(repo_name, owner):
     '''
     page_url = url('/repos/%s/%s/forks' % (owner, repo_name))
     data = get_data(page_url)
+    if not data:
+        return None
     forks = []
     for fork in data:
         forks.append(dict(name=fork['full_name'], created_at=fork['created_at'],
@@ -66,6 +68,8 @@ def get_pulls(repo_name, owner, state):
     pulls_url = url('/repos/%s/%s/pulls?state=%s' % 
         (owner, repo_name, state))
     data = get_data(pulls_url)
+    if not data:
+        return None
     pulls =[]
     for pull in data:
         pulls.append(dict(html_url=pull['html_url'], number=pull['number'], 
@@ -87,6 +91,8 @@ def get_issues(repo_name, owner, state):
     issues_url = url('/repos/%s/%s/issues?state=%s' % 
         (owner, repo_name, state))
     data = get_data(issues_url)
+    if not data:
+        return None
     issues = []
     for issue in data:
         issues.append(dict(html_url=issue['html_url'], number=issue['number'],
@@ -101,10 +107,13 @@ def get_repo_info(repo_name, owner):
     ''' Get a dictionary of all repo info.
     '''
     forks = get_forks(repo_name, owner)
-    pulls = get_pulls(repo_name, owner, 'open').append(
-        get_pulls(repo_name, owner, 'closed'))
-    issues = get_issues(repo_name, owner, 'open').append(
-        get_issues(repo_name, owner,'closed'))
+    pulls = []
+    pulls.append(get_pulls(repo_name, owner, 'open'))
+    pulls.append(get_pulls(repo_name, owner, 'closed'))
+
+    issues = []
+    issues.append(get_issues(repo_name, owner, 'open'))
+    issues.append(get_issues(repo_name, owner,'closed'))
 
     return dict(forks=forks, pulls=pulls, issues=issues)
 

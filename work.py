@@ -133,7 +133,7 @@ if __name__ == '__main__':
         pass_history = [int(round(m['Average'])) for m in sorted(pass_history, key=itemgetter('Timestamp'))]
         fail_history = [int(round(m['Average'])) for m in sorted(fail_history, key=itemgetter('Timestamp'))]
         
-        comp_history_json = json.dumps(dict(period=period, passed=pass_history, failed=fail_history))
+        history_json = json.dumps(dict(period=period, passed=pass_history, failed=fail_history))
 
 
         #
