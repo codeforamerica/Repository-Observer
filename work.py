@@ -91,11 +91,40 @@ if __name__ == '__main__':
     failures = []
     
     while True:
+        # 
+        # Metric settings
+        # 
+        cloudwatch = connect_cloudwatch()
+
+        period = 60 * 60
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=7)
+
+
         if opts.fetch:
             repo_data = fetch_repo_info(opts.config)
             for arepo in repo_data:
                 repo_dest = opts.fetch_dest + arepo['name'] + '.json'
                 output_data(json.dumps(arepo), repo_dest, 'json')
+
+                watch_hist = cloudwatch.get_metric_statistics(period, start_dt,
+                    end_dt, '%s_watchers' % arepo['name'], 
+                    opts.namespace, ['Average'])
+
+                stars_hist = cloudwatch.get_metric_statistics(period, start_dt,
+                    end_dt, '%s_stars' % arepo['name'], opts.namespace, 
+                    ['Average'])
+
+                contributors_hist = cloudwatch.get_metric_statistics(period, 
+                    start_dt, end_dt, '%s_contributors' % arepo['name'], opts.namespace, ['Average'])
+
+                if opts.send_counts:
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_watchers' % arepo['name'], arepo['watch_count'], unit='Count')
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_stars' % arepo['name'], arepo['star_count'], unit='Count')
+                    cloudwatch.put_metric_data(opts.namespace, 
+                        '%s_contributors' % arepo['name'], arepo['contributor_count'], unit='Count')
 
 
         #
@@ -121,11 +150,6 @@ if __name__ == '__main__':
         #
         # Gather metrics.
         #
-        cloudwatch = connect_cloudwatch()
-
-        period = 60 * 60
-        end_dt = datetime.now()
-        start_dt = end_dt - timedelta(days=7)
         
         pass_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Passed', opts.namespace, ['Average'])
         fail_history = cloudwatch.get_metric_statistics(period, start_dt, end_dt, 'Failed', opts.namespace, ['Average'])

@@ -45,6 +45,33 @@ def get_data(url):
     
     return resp.json()
 
+def get_star_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s/stargazers' % (owner, repo_name))
+    data = get_data(page_url)
+    if not data:
+        return 0
+    return len(data)
+
+def get_watcher_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s' % (owner, repo_name))
+    repo = get_data(page_url)
+    if not repo:
+        return 0
+    return repo['watchers']
+
+def get_contributor_count(repo_name, owner):
+    ''' Get count of stargazers for a repo
+    '''
+    page_url = url('/repos/%s/%s/contributors' % (owner, repo_name))
+    data = get_data(page_url)
+    if not data:
+        return 0
+    return len(get_data(page_url))
+
 def get_forks(repo_name, owner):
     ''' Get list of forks for a repo
     '''
@@ -107,6 +134,7 @@ def get_repo_info(repo_name, owner):
     ''' Get a dictionary of all repo info.
     '''
     forks = get_forks(repo_name, owner)
+
     pulls = []
     pulls.append(get_pulls(repo_name, owner, 'open'))
     pulls.append(get_pulls(repo_name, owner, 'closed'))
@@ -115,7 +143,13 @@ def get_repo_info(repo_name, owner):
     issues.append(get_issues(repo_name, owner, 'open'))
     issues.append(get_issues(repo_name, owner,'closed'))
 
-    return dict(forks=forks, pulls=pulls, issues=issues)
+    star_count = get_star_count(repo_name, owner)
+    watch_count = get_watcher_count(repo_name, owner)
+    cont_count = get_contributor_count(repo_name, owner)
+
+    return dict(forks=forks, pulls=pulls, issues=issues,
+        star_count=star_count, watch_count=watch_count, 
+        contributor_count=cont_count)
 
 
 def generate_repos():
