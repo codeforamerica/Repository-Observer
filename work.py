@@ -184,6 +184,7 @@ if __name__ == '__main__':
             cloudwatch.put_metric_data(opts.namespace, 'Passed', passed, unit='Count')
             cloudwatch.put_metric_data(opts.namespace, 'Failed', failed, unit='Count')
             cloudwatch.put_metric_data(opts.namespace, 'Change', change, unit='Count')
+            cloudwatch.put_metric_data(opts.namespace, 'Ratelimit Remaining', lib.get_rate_limit(), unit='Count')
         
         sleep(60 * 60/k)
 

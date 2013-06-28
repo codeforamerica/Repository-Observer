@@ -45,6 +45,18 @@ def get_data(url):
     
     return resp.json()
 
+def get_rate_limit():
+    current = datetime.now(tzutc())
+    date_fmt = '%a, %d %b %Y %H:%M:%S %Z'
+    data = http_get(url(''), 
+        headers={'User-Agent': 'Python', 
+            'If-Modified-Since': current.strftime(date_fmt)}, 
+        auth=http_auth)
+
+    if not data:
+        return 0
+    return data.headers['x-ratelimit-remaining']
+
 def get_star_count(repo_name, owner):
     ''' Get count of stargazers for a repo
     '''
