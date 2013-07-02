@@ -159,6 +159,9 @@ def generate_repos():
     # http://developer.github.com/v3/orgs/#get-an-organization
     #
     user_info = get_data(url('/orgs/%s' % org_name))
+    if user_info is None:
+        print "Could not generate repo info, check organization name."
+        exit(1)
     
     #
     # 1, 2, 3, etc. for each page of listed repos.
@@ -179,6 +182,9 @@ def generate_repos():
 def is_current_repo(repo):
     ''' Return True for a current repo, False otherwise.
     '''
+    if repo is None:
+        logging.debug('Failed to generate a repo.')
+        return False
     if repo['pushed_at'] is None:
         #
         # Never pushed means probably empty?

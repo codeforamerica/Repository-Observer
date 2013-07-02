@@ -62,8 +62,6 @@ def output_data(data, dest, ctype):
     else:
         with open(dest, 'w') as out:
             out.write(data)
-        with open(dest.replace('html', 'json'), 'w') as out:
-            out.write(json.dumps(repos))
 
 def fetch_repo_info(config_file):
     ''' Fetch data about repo list
