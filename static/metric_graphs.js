@@ -1,4 +1,4 @@
-function makeRepoGraph(repoMetrics, parent) {
+function makeRepoGraph(repoMetrics) {
     var repoData = {
         labels : repoMetrics.labels,
         datasets : [
@@ -33,13 +33,30 @@ function makeRepoGraph(repoMetrics, parent) {
     $("#" + repoMetrics.rname).append(canvas);
     var ctx = canvas[0].getContext('2d');
     var myNewGraph = new Chart(ctx).Line(repoData); 
+}
 
-
+selectNewGraph = function() {
+    $(".repo.chart").each(function(i, el) {
+        $(el).hide();
+    })
+    if ($(this).val() != "default") {
+        $("#" + $(this).val()).show();
+        $(".legend-title").text($(this).val() + " Metrics");
+        $(".graph-legend").show();
+        $(".graph-legend").children.show();
+    }
+    else {
+        $(".graph-legend").hide();
+    }
 }
 
 $(function(){
 
-    $(".repo.chart").each(function(i, el){    
+    $("#repo_chart_id").change(selectNewGraph);
+    $(".graph-legend").hide();
+
+    $(".repo.chart").each(function(i, el){ 
+      $(el).hide();
       $.ajax({url: "/chartData", 
         type: "GET",
         data: {repo: $(el).attr("id")},
@@ -48,7 +65,7 @@ $(function(){
             makeRepoGraph(metrics);
         }
       })
+    });
 
-  });
 
 });
