@@ -65,6 +65,38 @@ def output_data(data, dest, ctype):
         with open(dest.replace('html', 'json'), 'w') as out:
             out.write(json.dumps(repos))
 
+def get_hist_data(dest):
+
+    hist = dict(watch_count=[], cont_count=[], star_count=[])
+    data = {}
+    if dest.startswith('s3://'):
+        conn = connect_s3()
+        bucket_name, key_name = dest[5:].split('/', 1)
+
+        # if bucket_name not in conn.get_all_buckets():
+        #     logging.debug('Invalid bucket name: %s' % bucket_name)
+        #     return list()
+
+        bucket = conn.get_bucket(bucket_name)
+        key = bucket.get_key(key_name)
+        if key:
+            data = json.loads(key.get_contents_as_string())
+        else:
+            key = bucket.new_key(key_name)
+            print 'Missing file on S3, pleas run again.'
+    else:
+        with open(dest, 'r') as f:
+            data = f.read
+            if data:
+                data = json.loads(data)
+            else:
+                pass
+
+    if 'watch_count' in data and 'cont_count' in data and 'star_count' in data:
+        hist = data
+    return hist
+
+
 def fetch_repo_info(config_file):
     ''' Fetch data about repo list
         Output data to s3 destination
@@ -104,28 +136,40 @@ if __name__ == '__main__':
         if opts.fetch:
             repo_data = fetch_repo_info(opts.config)
             for arepo in repo_data:
-                repo_dest = opts.fetch_dest + arepo['name'] + '.json'
-                output_data(json.dumps(arepo), repo_dest, 'json')
 
-                watch_hist = cloudwatch.get_metric_statistics(period, start_dt,
-                    end_dt, '%s_watchers' % arepo['name'], 
-                    opts.namespace, ['Average'])
+                # Daily count reports
+                watch_info = dict(watch_count=arepo['watch_count'],
+                    time=end_dt.strftime('%Y-%m-%d'))
+                star_info = dict(star_count=arepo['star_count'],
+                    time=end_dt.strftime('%Y-%m-%d'))
+                cont_info = dict(cont_count=arepo['contributor_count'],
+                    time=end_dt.strftime('%Y-%m-%d'))
 
-                stars_hist = cloudwatch.get_metric_statistics(period, start_dt,
-                    end_dt, '%s_stars' % arepo['name'], opts.namespace, 
-                    ['Average'])
 
-                contributors_hist = cloudwatch.get_metric_statistics(period, 
-                    start_dt, end_dt, '%s_contributors' % arepo['name'], opts.namespace, ['Average'])
+                # Daily count destinations
+                repo_info_dest = opts.fetch_dest + arepo['name'] + '.json'
 
-                if opts.send_counts:
-                    cloudwatch.put_metric_data(opts.namespace, 
-                        '%s_watchers' % arepo['name'], arepo['watch_count'], unit='Count')
-                    cloudwatch.put_metric_data(opts.namespace, 
-                        '%s_stars' % arepo['name'], arepo['star_count'], unit='Count')
-                    cloudwatch.put_metric_data(opts.namespace, 
-                        '%s_contributors' % arepo['name'], arepo['contributor_count'], unit='Count')
+                repo_hist = get_hist_data(repo_info_dest)
+                repo_watch_hist = repo_hist['watch_count']
+                repo_star_hist = repo_hist['star_count']
+                repo_cont_hist = repo_hist['cont_count']
 
+                if len(repo_watch_hist) >= 365:
+                    repo_watch_hist = repo_watch_hist[1:].append(watch_info)
+                if len(repo_star_hist) >= 365:
+                    repo_star_hist = repo_star_hist[1:].append(star_info)
+                if len(repo_cont_hist) >= 365:
+                    repo_cont_hist = repo_cont_hist[1:]
+
+                repo_star_hist.append(star_info)
+                repo_watch_hist.append(watch_info)
+                repo_cont_hist.append(cont_info)
+
+                repo_hist = dict(watch_count=repo_watch_hist, star_count=repo_star_hist,
+                    cont_count=repo_cont_hist)
+
+                # Save today's report with the rest
+                output_data(json.dumps(repo_hist), repo_info_dest, 'json')
 
         #
         # List all current repositories.
