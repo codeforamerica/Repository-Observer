@@ -67,7 +67,7 @@ def output_data(data, dest, ctype):
 
 def get_hist_data(dest):
 
-    hist = dict(watch_count=[], cont_count=[], star_count=[])
+    hist = dict(watch=[], cont=[], star=[], labels=[])
     data = {}
     if dest.startswith('s3://'):
         conn = connect_s3()
@@ -92,7 +92,7 @@ def get_hist_data(dest):
             else:
                 pass
 
-    if 'watch_count' in data and 'cont_count' in data and 'star_count' in data:
+    if 'watch' in data and 'cont' in data and 'star' in data:
         hist = data
     return hist
 
@@ -138,35 +138,37 @@ if __name__ == '__main__':
             for arepo in repo_data:
 
                 # Daily count reports
-                watch_info = dict(watch_count=arepo['watch_count'],
-                    time=end_dt.strftime('%Y-%m-%d'))
-                star_info = dict(star_count=arepo['star_count'],
-                    time=end_dt.strftime('%Y-%m-%d'))
-                cont_info = dict(cont_count=arepo['contributor_count'],
-                    time=end_dt.strftime('%Y-%m-%d'))
+                watch_info = arepo['watch_count']
+                star_info = arepo['star_count']
+                cont_info = arepo['contributor_count']
+                label = end_dt.strftime('%Y-%m-%d')
 
 
                 # Daily count destinations
                 repo_info_dest = opts.fetch_dest + arepo['name'] + '.json'
 
                 repo_hist = get_hist_data(repo_info_dest)
-                repo_watch_hist = repo_hist['watch_count']
-                repo_star_hist = repo_hist['star_count']
-                repo_cont_hist = repo_hist['cont_count']
+                repo_watch_hist = repo_hist['watch']
+                repo_star_hist = repo_hist['star']
+                repo_cont_hist = repo_hist['cont']
+                label_hist = repo_hist['labels']
 
                 if len(repo_watch_hist) >= 365:
-                    repo_watch_hist = repo_watch_hist[1:].append(watch_info)
+                    repo_watch_hist = repo_watch_hist[1:]
                 if len(repo_star_hist) >= 365:
-                    repo_star_hist = repo_star_hist[1:].append(star_info)
+                    repo_star_hist = repo_star_hist[1:]
                 if len(repo_cont_hist) >= 365:
                     repo_cont_hist = repo_cont_hist[1:]
+                if len(label_hist) >= 365:
+                    label_hist = label_hist[1:]
 
                 repo_star_hist.append(star_info)
                 repo_watch_hist.append(watch_info)
                 repo_cont_hist.append(cont_info)
+                label_hist.append(label)
 
-                repo_hist = dict(watch_count=repo_watch_hist, star_count=repo_star_hist,
-                    cont_count=repo_cont_hist)
+                repo_hist = dict(watch=repo_watch_hist, star=repo_star_hist,
+                    cont=repo_cont_hist, labels=label_hist)
 
                 # Save today's report with the rest
                 output_data(json.dumps(repo_hist), repo_info_dest, 'json')
