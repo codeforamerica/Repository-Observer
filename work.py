@@ -62,8 +62,6 @@ def output_data(data, dest, ctype):
     else:
         with open(dest, 'w') as out:
             out.write(data)
-        with open(dest.replace('html', 'json'), 'w') as out:
-            out.write(json.dumps(repos))
 
 def get_hist_data(dest):
 
