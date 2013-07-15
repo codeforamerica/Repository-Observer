@@ -139,9 +139,9 @@ def fill_data(repo_hist):
     while end_label != start_label:
         end_label = (end_dt - timedelta(days=days_ago)).strftime('%Y-%m-%d')
         labels.insert(0, end_label)
-        watch.insert(0, 0)
-        star.insert(0, 0)
-        cont.insert(0, 0)
+        watch.insert(0, repo_hist['watch'][-1])
+        star.insert(0, repo_hist['star'][-1])
+        cont.insert(0, repo_hist['cont'][-1])
         days_ago += 1
 
     repo_hist['watch'].extend(watch)
