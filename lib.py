@@ -115,20 +115,31 @@ def get_issues(repo_name, owner, state):
     # 
     # http://developer.github.com/v3/issues/#list-issues-for-a-repository
     # 
-    issues_url = url('/repos/%s/%s/issues?state=%s' % 
-        (owner, repo_name, state))
-    data = get_data(issues_url)
-    if not data:
-        return None
     issues = []
-    for issue in data:
-        issues.append(dict(html_url=issue['html_url'], number=issue['number'],
-            title=issue['title'], body=issue['body'], comments=issue['comments'],
-            created_at=issue['created_at'], updated_at=issue['updated_at'],
-            closed_at=issue['closed_at'], state=issue['state'],
-            username=issue['user']['login'], avatar_url=issue['user']['avatar_url']))
+    page_num = 1
+    # Get all issues of this state
+    while True:
+        issues_url = url('/repos/%s/%s/issues?state=%s&per_page=%d&page=%d' % 
+            (owner, repo_name, state, per_page, page_num))
+        data = get_data(issues_url)
+        # If request failed
+        if data is None:
+            break
+
+        # If request succeeded but was empty
+        if not data:
+            break
+        for issue in data:
+            issues.append(dict(html_url=issue['html_url'], number=issue['number'],
+                title=issue['title'], body=issue['body'], comments=issue['comments'],
+                created_at=issue['created_at'], updated_at=issue['updated_at'],
+                closed_at=issue['closed_at'], state=issue['state'],
+                username=issue['user']['login'], avatar_url=issue['user']['avatar_url']))
+            
+        page_num = page_num + 1
 
     return issues
+
 
 def get_repo_info(repo_name, owner):
     ''' Get a dictionary of all repo info.

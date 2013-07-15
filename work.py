@@ -71,10 +71,6 @@ def get_hist_data(dest):
         conn = connect_s3()
         bucket_name, key_name = dest[5:].split('/', 1)
 
-        # if bucket_name not in conn.get_all_buckets():
-        #     logging.debug('Invalid bucket name: %s' % bucket_name)
-        #     return list()
-
         bucket = conn.get_bucket(bucket_name)
         key = bucket.get_key(key_name)
         if key:
@@ -84,7 +80,7 @@ def get_hist_data(dest):
             print 'Missing file on S3, pleas run again.'
     else:
         with open(dest, 'r') as f:
-            data = f.read
+            data = f.read()
             if data:
                 data = json.loads(data)
             else:
@@ -93,6 +89,25 @@ def get_hist_data(dest):
     if 'watch' in data and 'cont' in data and 'star' in data:
         hist = data
     return hist
+
+
+def get_list_totals(config_file):
+    ''' Get total statistics from a whole list of repos
+    '''
+    with open(opts.config, 'r') as f:
+        config = json.loads(f.read())
+        repo_list = config['repos']
+    total_closed = 0
+    total_forks = 0
+
+    for arepo in repo_list:
+        if 'name' in arepo and 'owner' in arepo:
+            total_closed = total_closed + len(lib.get_issues(arepo['name'], arepo['owner'], 'closed'))
+            total_forks = total_forks + len(lib.get_forks(arepo['name'], arepo['owner']))
+        else: logging.debug("Config file is invalid.")
+
+
+    return {"total_closed": total_closed, "total_forks": total_forks}
 
 
 def fetch_repo_info(config_file):
@@ -111,10 +126,53 @@ def fetch_repo_info(config_file):
 
     return repo_list
 
+def fill_data(repo_hist):
+    end_dt = datetime.now()
+    end_label = end_dt.strftime('%Y-%m-%d')
+    start_label = repo_hist['labels'][-1]
+    days_ago = 1
+    watch = []
+    star = []
+    cont = []
+    labels = []
+
+    while end_label != start_label:
+        end_label = (end_dt - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+        labels.insert(0, end_label)
+        watch.insert(0, 0)
+        star.insert(0, 0)
+        cont.insert(0, 0)
+        days_ago += 1
+
+    repo_hist['watch'].extend(watch)
+    repo_hist['star'].extend(star)
+    repo_hist['cont'].extend(cont)
+    repo_hist['labels'].extend(labels)
+    for group in repo_hist.iterkeys():
+        while len(repo_hist[group]) >= 365:
+            repo_hist[group] = repo_hist[group][1:]
+
+
+    return repo_hist
+
+def weekly_change(repo_hist):
+    ''' Given a filled repository history, including today
+        Computes the change in each stat over the last 7 days
+    '''
+    last_week = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    if last_week in repo_hist['labels']:
+        ind = repo_hist['labels'].index(last_week)
+    else:
+        ind = 0
+    return dict(watch= repo_hist['watch'][-1] - repo_hist['watch'][ind],
+        star= repo_hist['star'][-1] - repo_hist['star'][ind],
+        cont= repo_hist['cont'][-1] - repo_hist['cont'][ind],
+        )
+
 
 if __name__ == '__main__':
     opts, (destination, ) = parser.parse_args()
-    
+
     lib.http_auth = opts.username, opts.password
     lib.org_name = opts.organization
     
@@ -131,8 +189,11 @@ if __name__ == '__main__':
         start_dt = end_dt - timedelta(days=7)
 
 
+
         if opts.fetch:
             repo_data = fetch_repo_info(opts.config)
+
+            # Send time series data of each repo to destination
             for arepo in repo_data:
 
                 # Daily count reports
@@ -151,14 +212,11 @@ if __name__ == '__main__':
                 repo_cont_hist = repo_hist['cont']
                 label_hist = repo_hist['labels']
 
-                if len(repo_watch_hist) >= 365:
-                    repo_watch_hist = repo_watch_hist[1:]
-                if len(repo_star_hist) >= 365:
-                    repo_star_hist = repo_star_hist[1:]
-                if len(repo_cont_hist) >= 365:
-                    repo_cont_hist = repo_cont_hist[1:]
-                if len(label_hist) >= 365:
-                    label_hist = label_hist[1:]
+                # Keep points collected once per day, fill missing days
+                if label in label_hist:
+                    continue
+                repo_hist = fill_data(repo_hist)
+
 
                 repo_star_hist.append(star_info)
                 repo_watch_hist.append(watch_info)
@@ -167,9 +225,16 @@ if __name__ == '__main__':
 
                 repo_hist = dict(watch=repo_watch_hist, star=repo_star_hist,
                     cont=repo_cont_hist, labels=label_hist)
+                changes = weekly_change(repo_hist)
+                repo_hist.update(dif_cont=changes['cont'], dif_star = changes['star'],
+                    dif_watch = changes['watch'])
 
                 # Save today's report with the rest
                 output_data(json.dumps(repo_hist), repo_info_dest, 'json')
+
+            totals = get_list_totals(opts.config)
+            total_info_dest = opts.fetch_dest + "totals.json"
+            output_data(json.dumps(totals), total_info_dest, 'json')
 
         #
         # List all current repositories.
