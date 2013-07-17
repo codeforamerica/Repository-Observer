@@ -24,6 +24,9 @@ Compliant repositories have a valid README file.
 There is a function in 'lib.py' that operates on a JSON config file 
 containing a list of repos represented by their name/owner
 
+If fetch is set, graphable time series of repo metrics will be
+sent to datadest.
+
 Install
 -------
 
@@ -39,9 +42,11 @@ Running locally, writing to local HTML output:
     python work.py --help
     python work.py -u <github username> -p <github password> -o <github organization> output.html
 
-Fetch repo data, writing to local JSON output:
+Fetch repo list data, writing to local JSON output:
 
 	python work.py -c <json config file> output.html
+
+
 
 Deploying to Heroku, with four required environment variables configured and
 a correct remote set up from Git:
