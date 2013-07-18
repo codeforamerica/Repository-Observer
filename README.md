@@ -1,7 +1,8 @@
 Repository Observer
 ===================
 
-Simple script to generate a report on an organization’s Github repositories.
+Simple script to generate a report on an organization’s Github repositories
+		and/or generate info about a list of repositories
 
 There are two functions in `lib.py` that operate on a decoded JSON
 representation of a repository from Github’s API:
@@ -20,6 +21,12 @@ Second element will be a commit hash for the repository or `None`.
 Third element will be a list of strings with reasons for failure.
 Compliant repositories have a valid README file.
 
+There is a function in 'lib.py' that operates on a JSON config file 
+containing a list of repos represented by their name/owner
+
+If fetch is set, graphable time series of repo metrics will be
+sent to datadest.
+
 Install
 -------
 
@@ -34,6 +41,12 @@ Running locally, writing to local HTML output:
 
     python work.py --help
     python work.py -u <github username> -p <github password> -o <github organization> output.html
+
+Fetch repo list data, writing to local JSON output:
+
+	python work.py -c <json config file> output.html
+
+
 
 Deploying to Heroku, with four required environment variables configured and
 a correct remote set up from Git:
