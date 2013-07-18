@@ -254,24 +254,27 @@ def fill_data(repo_hist):
     end_dt = datetime.now()
 
     for repo in repo_hist.iterkeys():
-        end_label = end_dt.strftime('%Y-%m-%d')
         stars = []
         closed_issues = []
         forks = []
         labels = []
         days_ago = 1
+        end_label = (end_dt - timedelta(days=days_ago)).strftime('%Y-%m-%d')
 
         if repo_hist[repo]['labels']:
             start_label = repo_hist[repo]['labels'][-1]
         else:
             start_label = end_label
-        while end_label != start_label:
-            end_label = (end_dt - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+
+
+        while end_label > start_label:
             labels.insert(0, end_label)
             forks.insert(0, repo_hist[repo]['fork'][-1])
             stars.insert(0, repo_hist[repo]['star'][-1])
             closed_issues.insert(0, repo_hist[repo]['closed_issue'][-1])
             days_ago += 1
+            end_label = (end_dt - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+
 
         repo_hist[repo]['closed_issue'].extend(closed_issues)
         repo_hist[repo]['star'].extend(stars)
