@@ -15,7 +15,6 @@ from dateutil.tz import tzutc
 import json
 
 
-logging.basicConfig(level=logging.DEBUG)
 #
 # Global configuration parameters, some overriden by command-line opts below.
 #
