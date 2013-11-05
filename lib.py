@@ -5,9 +5,11 @@ from re import compile, I
 from math import ceil
 
 import logging
+import calendar
 
 from requests import get as http_get
 from dateutil.parser import parse as dateutil_parse
+from datetime import *; from dateutil.relativedelta import *
 from BeautifulSoup import BeautifulSoup
 from markdown2 import markdown
 from dateutil.tz import tzutc
@@ -111,6 +113,10 @@ def is_compliant_repo(repo):
     
     commits_url = url('/repos/%(full_name)s/commits?per_page=1' % repo)
     commits = get_data(commits_url)
+
+    if commits is None:
+        return False, '', ['Empty repository']
+
     commit_hash = commits[0]['sha']
     
     #
@@ -118,7 +124,10 @@ def is_compliant_repo(repo):
     #
     if readme is None:
         return False, commit_hash, ['Missing README']
-    
+
+    if is_less_than_a_week_old(repo['created_at']):
+        return True, commit_hash, []
+
     text = b64decode(readme['content'])
     soup = BeautifulSoup(markdown(text))
     reasons = []
@@ -137,6 +146,13 @@ def is_compliant_repo(repo):
         return False, commit_hash, reasons
     
     return True, commit_hash, []
+
+def is_less_than_a_week_old(created_at_string):
+    now = datetime.now(tzutc())
+    a_week_ago = now+relativedelta(weeks=-1)
+    created_at = dateutil_parse(created_at_string)
+
+    return created_at > a_week_ago
 
 def has_relocated_section(soup):
     ''' Return true if the tag soup has a relocation section.
